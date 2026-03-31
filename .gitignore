@@ -1,9 +1,4 @@
-venv/
-.venv/
-__pycache__/
-*.py[cod]
-*$py.class
-.Python
+# Monorepo — local artifacts & secrets (never commit keys)
 .env
 .env.*
 !.env.example
@@ -11,3 +6,17 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# API (Python) — run from server/
+server/venv/
+server/.venv/
+server/**/__pycache__/
+*.py[cod]
+
+# UI (Node)
+frontend/node_modules/
+frontend/dist/
+
+# Legacy local folders at repo root (if present)
+venv/
+__pycache__/
