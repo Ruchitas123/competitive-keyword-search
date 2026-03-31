@@ -16,7 +16,8 @@ from backend.config import (
     AZURE_OPENAI_API_VERSION,
     AZURE_OPENAI_API_KEY,
     SEMRUSH_URL_TEMPLATE,
-    PRODUCT_COMPETITORS
+    PRODUCT_COMPETITORS,
+    get_azure_openai_settings,
 )
 
 # Product names to exclude from keywords
@@ -44,20 +45,39 @@ class AzureOpenAIClient:
     
     async def chat_completion(self, messages: list, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """Send a chat completion request to Azure OpenAI - raises exception on failure"""
+        az = get_azure_openai_settings()
+        endpoint = az["endpoint"]
+        api_key = az["api_key"]
+        base_url = az["chat_url"]
+
+        if not endpoint:
+            raise Exception(
+                "AZURE_OPENAI_ENDPOINT is missing. Create a .env file next to main.py (copy .env.example) "
+                "or export AZURE_OPENAI_ENDPOINT, e.g. https://YOUR_RESOURCE.openai.azure.com"
+            )
+        if not api_key:
+            raise Exception(
+                "AZURE_OPENAI_API_KEY is missing. Add it to .env next to main.py (never commit this file)."
+            )
+        if not base_url.startswith(("http://", "https://")):
+            raise Exception(
+                f"Invalid Azure chat URL built from endpoint {endpoint!r}. Check AZURE_OPENAI_ENDPOINT in .env."
+            )
         headers = {
             "Content-Type": "application/json",
-            "api-key": self.api_key
+            "api-key": api_key
         }
         
+        # gpt-4o and newer Azure deployments expect max_completion_tokens, not max_tokens
         payload = {
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens
+            "max_completion_tokens": max_tokens,
         }
         
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                self.base_url,
+                base_url,
                 headers=headers,
                 json=payload
             )

@@ -10,6 +10,18 @@ from bs4 import BeautifulSoup
 from typing import Dict, List
 
 
+def _ensure_request_url(url: str) -> str:
+    """httpx requires an absolute URL with http:// or https://."""
+    u = (url or "").strip()
+    if not u:
+        raise Exception("Request URL is empty")
+    if u.startswith("//"):
+        return "https:" + u
+    if not u.startswith(("http://", "https://")):
+        return "https://" + u.lstrip("/")
+    return u
+
+
 class WebScraper:
     """Web scraper for extracting article content - NO FALLBACKS"""
     
@@ -22,9 +34,10 @@ class WebScraper:
     
     async def fetch_page(self, url: str) -> str:
         """Fetch HTML content from a URL - raises exception on failure"""
+        request_url = _ensure_request_url(url)
         try:
             async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                response = await client.get(url, headers=self.headers)
+                response = await client.get(request_url, headers=self.headers)
                 response.raise_for_status()
                 html = response.text
                 if not html or len(html) < 100:

@@ -23,6 +23,24 @@ FastAPI service for SEO keyword extraction, competitor analysis, and content opt
 
 3. **Do not commit** `.env`. It is listed in `.gitignore`.
 
+### Optional: set variables in the shell (same as `.env`)
+
+This project uses **`uvicorn`** (not `simple_server.py`). From the project root, after activating your venv:
+
+```bash
+export AZURE_OPENAI_ENDPOINT="https://YOUR_RESOURCE.openai.azure.com"
+export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
+export AZURE_OPENAI_API_VERSION="2024-02-01"
+export AZURE_OPENAI_API_KEY="your-key-here"
+export LLM_PROVIDER=azure
+
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Then open **http://127.0.0.1:8000/** in a browser for the API home page, **http://127.0.0.1:8000/docs** for Swagger, or **http://127.0.0.1:8000/health** for a JSON health check.
+
+**Never paste real API keys into chat, tickets, or Git.** If a key was exposed, rotate it in the Azure portal and update `.env` only on your machine.
+
 ## Prerequisites
 
 - Python 3.8+

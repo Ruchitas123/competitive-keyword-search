@@ -174,12 +174,21 @@ class CompetitorFetchingAgent:
     
     async def _fetch_page(self, url: str, raise_on_error: bool = False, timeout: float = 15.0) -> str:
         """Fetch HTML content from a URL with configurable timeout and rotating headers"""
+        u = (url or "").strip()
+        if not u:
+            if raise_on_error:
+                raise Exception("Empty URL")
+            return ""
+        if u.startswith("//"):
+            u = "https:" + u
+        elif not u.startswith(("http://", "https://")):
+            u = "https://" + u.lstrip("/")
         try:
             headers = self._get_rotated_headers()
             async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
                 # Add small delay between requests to be respectful
                 await asyncio.sleep(0.5)
-                response = await client.get(url, headers=headers)
+                response = await client.get(u, headers=headers)
                 response.raise_for_status()
                 return response.text
         except httpx.TimeoutException:

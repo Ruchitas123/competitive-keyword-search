@@ -7,76 +7,115 @@ Excludes product names from keywords.
 No fallbacks - raises exceptions on failure.
 """
 
-import re
+import html
+import json
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List
 
 from backend.config import SERVER_HOST, SERVER_PORT, PRODUCT_COMPETITORS
 from crew import seo_crew  # Import the agent orchestrator - ALL operations go through this
 
-# Custom tag for API documentation
-API_TAG = "Competitive Vocabulary Intelligence Agent APIs"
+# OpenAPI tags (short names so Swagger UI lists operations clearly)
+TAG_META = "0. Home & docs"
+TAG_HEALTH = "1. Health"
+TAG_DATA = "2. Products & competitors"
+TAG_ANALYSIS = "3. SEO analysis"
+TAG_CONTENT = "4. Content rewrite"
 
-# URL Validation Patterns for each product type
-# Supports both AEM Cloud Service and versioned AEM (6.5, 6.4, etc.)
-URL_PATTERNS = {
-    "Forms": {
-        "pattern": r"^https://experienceleague\.adobe\.com/en/docs/experience-manager-(cloud-service|\d+)/content/forms(/.*)?$",
-        "example": "https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/forms/... OR .../experience-manager-65/content/forms/...",
-        "description": "Forms URLs must be from Experience League AEM documentation (Cloud Service or versioned like 6.5)"
-    },
-    "Assets": {
-        "pattern": r"^https://experienceleague\.adobe\.com/en/docs/experience-manager-(cloud-service|\d+)/content/assets(/.*)?$",
-        "example": "https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/... OR .../experience-manager-65/content/assets/...",
-        "description": "Assets URLs must be from Experience League AEM documentation (Cloud Service or versioned like 6.5)"
-    },
-    "Sites": {
-        "pattern": r"^https://experienceleague\.adobe\.com/en/docs/experience-manager-(cloud-service|\d+)/content/sites(/.*)?$",
-        "example": "https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/... OR .../experience-manager-65/content/sites/...",
-        "description": "Sites URLs must be from Experience League AEM documentation (Cloud Service or versioned like 6.5)"
-    }
+# Minimal URL rules: Experience League docs only, path must match product area.
+_PRODUCT_PATH_MARKERS = {
+    "Forms": "/content/forms/",
+    "Assets": "/content/assets/",
+    "Sites": "/content/sites/",
 }
 
 
 def validate_url_for_product(url: str, product: str) -> tuple[bool, str]:
-    """
-    Validate if the URL matches the expected pattern for the selected product.
-    
-    Returns:
-        tuple: (is_valid, error_message)
-    """
-    if product not in URL_PATTERNS:
-        return False, "Invalid URL"
-    
-    pattern_info = URL_PATTERNS[product]
-    pattern = pattern_info["pattern"]
-    
-    if re.match(pattern, url):
-        return True, ""
-    else:
-        return False, "Invalid URL"
+    """https only, host experienceleague.adobe.com, path contains the right /content/<area>/."""
+    u = (url or "").strip()
+    if not u:
+        return False, "URL is required"
+    if product not in _PRODUCT_PATH_MARKERS:
+        return False, "Invalid product"
+
+    parsed = urlparse(u)
+    if parsed.scheme.lower() != "https":
+        return False, "URL must start with https://"
+    host = (parsed.netloc or "").lower()
+    if host != "experienceleague.adobe.com":
+        return False, "URL must be on experienceleague.adobe.com"
+
+    path = parsed.path or ""
+    marker = _PRODUCT_PATH_MARKERS[product]
+    if marker not in path.lower():
+        return False, f"For {product}, use an Experience League URL whose path includes {marker}"
+    return True, ""
 
 
 app = FastAPI(
     title="Competitive Vocabulary Intelligence Agent",
     version="1.0.0",
-    description="SEO Analysis - Article Keywords, Competitor Keywords, Suggested Keywords",
     openapi_tags=[
-        {
-            "name": API_TAG,
-            "description": "APIs for keyword extraction, competitor analysis, and SEO optimization"
-        }
+        {"name": TAG_META, "description": "Landing page and JSON index"},
+        {"name": TAG_HEALTH, "description": "Service status"},
+        {"name": TAG_DATA, "description": "Product list and competitor URLs"},
+        {"name": TAG_ANALYSIS, "description": "Full pipeline: URL → keywords"},
+        {"name": TAG_CONTENT, "description": "Rewrite body copy for target keywords"},
     ],
-    # Hide the Schemas section in Swagger UI
-    swagger_ui_parameters={"defaultModelsExpandDepth": -1}
+    swagger_ui_parameters={
+        "defaultModelsExpandDepth": -1,
+        # Collapsed accordions on load; expand a tag to see its operations
+        "docExpansion": "none",
+        "filter": True,
+        "tryItOutEnabled": True,
+        # Swagger UI 5: hide OAS badge, spec URL, extra lines in the info header
+        "customCss": (
+            ".swagger-ui .info .version-stamp,"
+            ".swagger-ui .info .title small,"
+            ".swagger-ui .info hgroup small,"
+            ".swagger-ui .info h2 small,"
+            ".swagger-ui .info a.link,"
+            ".swagger-ui .info a[href*='openapi'],"
+            ".swagger-ui .info .base-url,"
+            ".swagger-ui .info .description { display: none !important; }"
+        ),
+    },
 )
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    app.openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        summary=app.summary,
+        description=None,
+        terms_of_service=app.terms_of_service,
+        contact=app.contact,
+        license_info=app.license_info,
+        routes=app.routes,
+        webhooks=app.webhooks.routes,
+        tags=app.openapi_tags,
+        servers=app.servers,
+        separate_input_output_schemas=app.separate_input_output_schemas,
+        external_docs=app.openapi_external_docs,
+    )
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 app.add_middleware(
     CORSMiddleware,
@@ -105,31 +144,81 @@ class ContentRewriteRequest(BaseModel):
 
 
 # Health Check
-@app.get("/health", tags=[API_TAG])
+@app.get("/health", tags=[TAG_HEALTH])
 async def health_check():
     """Check if the service is running"""
     return {"status": "healthy", "service": "Competitive Vocabulary Intelligence Agent"}
 
 
-# Root endpoint
-@app.get("/", tags=[API_TAG])
-async def root():
-    """Get API information and available endpoints"""
-    return {
-        "message": "Competitive Vocabulary Intelligence Agent API",
-        "version": "1.0.0",
-        "endpoints": {
-            "GET /health": "Health check",
-            "GET /api/products": "Get product list (Forms, Assets, Sites)",
-            "POST /api/competitors": "Get competitors for a product",
-            "POST /api/analyze": "Analyze URL - returns Article, Competitor, Suggested keywords",
-            "POST /api/rewrite-content": "Rewrite content for SEO"
-        }
-    }
+# JSON metadata (for scripts / API clients)
+ROOT_API_INFO = {
+    "message": "Competitive Vocabulary Intelligence Agent API",
+    "version": "1.0.0",
+    "documentation": {
+        "swagger_ui": "/docs",
+        "redoc": "/redoc",
+        "openapi_json": "/openapi.json",
+    },
+    "endpoints": {
+        "GET /": "API catalog (JSON from curl; HTML page if you open in a browser)",
+        "GET /api": "Same catalog as GET /",
+        "GET /api/info": "Same catalog as GET /",
+        "GET /health": "Health check",
+        "GET /api/products": "Get product list (Forms, Assets, Sites)",
+        "POST /api/competitors": "Get competitors for a product",
+        "POST /api/analyze": "Analyze URL - returns Article, Competitor, Suggested keywords",
+        "POST /api/rewrite-content": "Rewrite content for SEO",
+    },
+}
+
+
+def _accepts_html_first(request: Request) -> bool:
+    """Browsers send text/html first; curl/API clients usually send */* or application/json."""
+    accept = request.headers.get("accept") or ""
+    if not accept.strip():
+        return False
+    first = accept.split(",")[0].strip().split(";")[0].strip().lower()
+    return first in ("text/html", "application/xhtml+xml")
+
+
+def _catalog_response(request: Request):
+    """JSON for scripts/curl; simple HTML page when opened in a browser (avoids 'empty' white screen)."""
+    if _accepts_html_first(request):
+        payload = json.dumps(ROOT_API_INFO, indent=2)
+        title = html.escape(ROOT_API_INFO["message"])
+        ver = html.escape(str(ROOT_API_INFO["version"]))
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'/>"
+                f"<title>{title}</title>"
+                "<style>body{font-family:system-ui,sans-serif;margin:1.25rem;line-height:1.5}"
+                "pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow:auto;font-size:13px}"
+                "code{background:#eee;padding:2px 6px;border-radius:4px}</style></head><body>"
+                f"<h1 style='font-size:1.25rem'>{title}</h1>"
+                f"<p>Version <strong>{ver}</strong> · Interactive docs: <a href='/docs'>/docs</a></p>"
+                "<p>For raw JSON, use <code>curl</code> or set header "
+                "<code>Accept: application/json</code>.</p>"
+                f"<pre>{html.escape(payload)}</pre></body></html>"
+            )
+        )
+    return JSONResponse(content=ROOT_API_INFO)
+
+
+@app.get("/", tags=[TAG_META])
+async def root(request: Request):
+    """API catalog: JSON (default for API clients) or readable HTML in the browser."""
+    return _catalog_response(request)
+
+
+@app.get("/api", tags=[TAG_META])
+@app.get("/api/info", tags=[TAG_META])
+async def api_catalog(request: Request):
+    """Same body as GET / (catalog is not empty—browsers used to show blank for raw JSON)."""
+    return _catalog_response(request)
 
 
 # Get Products
-@app.get("/api/products", tags=[API_TAG])
+@app.get("/api/products", tags=[TAG_DATA])
 async def get_products():
     """Get list of available product types"""
     return {
@@ -139,7 +228,7 @@ async def get_products():
 
 
 # Get Competitors
-@app.post("/api/competitors", tags=[API_TAG])
+@app.post("/api/competitors", tags=[TAG_DATA])
 async def get_competitors(request: ProductRequest):
     """Get competitors for a specific product type"""
     if request.product not in PRODUCT_COMPETITORS:
@@ -159,7 +248,7 @@ async def get_competitors(request: ProductRequest):
 
 
 # Main Analysis Endpoint - Uses ALL 4 AGENTS through seo_crew
-@app.post("/api/analyze", tags=[API_TAG])
+@app.post("/api/analyze", tags=[TAG_ANALYSIS])
 async def analyze_url(request: AnalyzeRequest):
     """
     Main SEO Analysis Endpoint - Uses All 4 Agents
@@ -174,10 +263,7 @@ async def analyze_url(request: AnalyzeRequest):
     - Competitor Keywords (what competitors rank for)
     - Suggested Keywords (top 10 high-volume from both sources)
     
-    URL Validation:
-    - Forms: URL must be from experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/forms/
-    - Assets: URL must be from experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/assets/
-    - Sites: URL must be from experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/
+    URL: https Experience League page; path must include /content/forms/, /content/assets/, or /content/sites/ for the selected product.
     """
     print(f"\n[API] /api/analyze called")
     print(f"[API] URL: {request.url}")
@@ -233,7 +319,7 @@ async def analyze_url(request: AnalyzeRequest):
 
 
 # Content Rewriting - Uses ContentRewritingAgent
-@app.post("/api/rewrite-content", tags=[API_TAG])
+@app.post("/api/rewrite-content", tags=[TAG_CONTENT])
 async def rewrite_content(request: ContentRewriteRequest):
     """
     Rewrite content for SEO optimization using ContentRewritingAgent
