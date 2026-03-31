@@ -8,7 +8,7 @@ The UI talks to the API at **`http://127.0.0.1:8000`** by default. That value li
 
 - `src/services/api.js` — `API_BASE_URL`
 
-Change it if your API runs on another host or port. The backend must be running and must have **`AZURE_OPENAI_API_KEY`** and related variables set (see **[root `README.md`](../README.md)** and **[`server/README.md`](../server/README.md)**).
+Change it if your API runs on another host or port. The backend must be running and must have **`AZURE_OPENAI_API_KEY`** and related variables set (see **[root `README.md`](../README.md)** and **[`seo-backend/README.md`](../seo-backend/README.md)**).
 
 ## Prerequisites
 
@@ -17,10 +17,10 @@ Change it if your API runs on another host or port. The backend must be running 
 
 ## Install and run
 
-From the **`frontend/`** directory:
+From the **`seo-frontend/`** directory (from repo root: `cd seo-frontend`):
 
 ```bash
-cd frontend
+cd seo-frontend
 npm install
 npm run dev
 ```
@@ -38,7 +38,7 @@ npm run dev
 ## Project structure
 
 ```
-frontend/
+seo-frontend/
 ├── src/
 │   ├── App.jsx
 │   ├── main.jsx
@@ -61,10 +61,10 @@ frontend/
 
 ## Troubleshooting
 
-- **Cannot reach API** — Start the server from `server/` and confirm http://127.0.0.1:8000/health  
+- **Cannot reach API** — Start the API from `seo-backend/` and confirm http://127.0.0.1:8000/health  
 - **CORS errors** — Backend must allow the frontend origin (dev server URL)  
 - **Dependency issues** — Remove `node_modules` and `package-lock.json`, then `npm install` again  
 
 ## Security note
 
-Do not put API keys in the frontend. Azure keys belong only in **`server/.env`**, never in this app’s source or public env files.
+Do not put API keys in the frontend. Azure keys belong only in **`seo-backend/.env`**, never in this app’s source or public env files.

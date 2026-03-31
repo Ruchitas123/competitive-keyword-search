@@ -1,63 +1,63 @@
-# Competitive keyword search
+# SEO Agent
 
-Monorepo for the SEO competitive analysis stack: a **FastAPI** backend (`server/`) and a **React + Vite** frontend (`frontend/`).
+This repository contains two projects:
+
+- **`seo-backend/`** — FastAPI API, CrewAI agents, Azure OpenAI
+- **`seo-frontend/`** — React + Vite UI (Adobe Spectrum)
+
+They are **one Git repo** (`seo-agent` on GitHub), not two separate repositories.
 
 ## Required: Azure OpenAI API key
 
-The backend calls **Azure OpenAI**. Without valid credentials the API will not work.
+The backend calls **Azure OpenAI**. Configure it before running the API.
 
-1. Copy the example env file and edit it:
+1. Copy the template:
 
    ```bash
-   cp server/.env.example server/.env
+   cp seo-backend/.env.example seo-backend/.env
    ```
 
-2. Open `server/.env` and set at least:
+2. Edit **`seo-backend/.env`** and set **`AZURE_OPENAI_API_KEY`**, **`AZURE_OPENAI_ENDPOINT`**, **`AZURE_OPENAI_DEPLOYMENT_NAME`**, and **`AZURE_OPENAI_API_VERSION`** (see Azure portal for your resource).
 
-   - **`AZURE_OPENAI_API_KEY`** — your Azure OpenAI key (**required**)
-   - **`AZURE_OPENAI_ENDPOINT`** — your resource URL, e.g. `https://YOUR_RESOURCE_NAME.openai.azure.com`
-   - **`AZURE_OPENAI_DEPLOYMENT_NAME`** — your deployment name (often a model deployment name in Azure)
-   - **`AZURE_OPENAI_API_VERSION`** — API version your resource uses (see Azure docs)
+3. **Never commit** `.env` or real keys.
 
-3. **Never commit** `.env` or paste real keys into GitHub. The repository ignores `.env` on purpose.
+More detail:
 
-For run commands, troubleshooting, and endpoint details, see:
-
-- **[`server/README.md`](server/README.md)** — backend
-- **[`frontend/README.md`](frontend/README.md)** — frontend
+- **[`seo-backend/README.md`](seo-backend/README.md)** — Python API
+- **[`seo-frontend/README.md`](seo-frontend/README.md)** — web UI
 
 ## Quick start (local)
 
-**Terminal 1 — backend**
+**Backend**
 
 ```bash
-cd server
+cd seo-backend
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-# Ensure server/.env exists with AZURE_OPENAI_API_KEY and related vars set
+# Ensure seo-backend/.env exists with your Azure variables
 uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**Terminal 2 — frontend**
+**Frontend** (another terminal)
 
 ```bash
-cd frontend
+cd seo-frontend
 npm install
 npm run dev
 ```
 
-By default the UI is configured to talk to the API at `http://127.0.0.1:8000`. If you deploy elsewhere, point the frontend at that URL (see `frontend/README.md`).
+The UI defaults to **`http://127.0.0.1:8000`** for the API (see `seo-frontend/src/services/api.js`).
 
-## Repository layout
+## Layout
 
 ```
 .
-├── README.md           # This file (overview + key setup)
-├── server/             # FastAPI backend + CrewAI agents
-│   ├── README.md       # Backend documentation
+├── README.md                 # This file
+├── seo-backend/              # FastAPI + agents
+│   ├── README.md
 │   └── ...
-└── frontend/           # React (Vite) UI
-    ├── README.md       # Frontend documentation
+└── seo-frontend/             # React app
+    ├── README.md
     └── ...
 ```

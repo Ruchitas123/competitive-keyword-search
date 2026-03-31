@@ -1,22 +1,25 @@
-# Monorepo — local artifacts & secrets (never commit keys)
+# Secrets (never commit keys)
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
+!**/.env.example
 *.log
 .DS_Store
 .idea/
 .vscode/
 
-# API (Python) — run from server/
-server/venv/
-server/.venv/
-server/**/__pycache__/
+# Backend (Python)
+seo-backend/venv/
+seo-backend/.venv/
+seo-backend/**/__pycache__/
 *.py[cod]
 
-# UI (Node)
-frontend/node_modules/
-frontend/dist/
+# Frontend (Node)
+seo-frontend/node_modules/
+seo-frontend/dist/
 
-# Legacy local folders at repo root (if present)
+# Legacy local folders if present at repo root
 venv/
 __pycache__/

@@ -12,7 +12,7 @@ FastAPI service for SEO keyword extraction, competitor analysis, and content opt
    cp .env.example .env
    ```
 
-2. Edit `.env` in this **`server/`** directory and set:
+2. Edit `.env` in this **`seo-backend/`** directory and set:
 
    | Variable | Required | Description |
    |----------|----------|-------------|
@@ -33,10 +33,10 @@ The repository **[root `README.md`](../README.md)** repeats this setup so it is 
 
 ## Installation
 
-From the **`server/`** directory:
+From the **`seo-backend/`** directory (from repo root: `cd seo-backend`):
 
 ```bash
-cd server
+cd seo-backend
 python -m venv venv
 ```
 
@@ -81,7 +81,7 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ## Project structure
 
 ```
-server/
+seo-backend/
 ├── agents/                  # CrewAI agents
 ├── backend/
 │   ├── config.py            # Settings (from environment)
