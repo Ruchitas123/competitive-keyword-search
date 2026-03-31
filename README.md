@@ -1,63 +1,116 @@
-# SEO Agent
+# Backend — Competitive keyword search API
 
-This repository contains two projects:
+FastAPI service for SEO keyword extraction, competitor analysis, and content optimization (CrewAI agents + Azure OpenAI).
 
-- **`seo-backend/`** — FastAPI API, CrewAI agents, Azure OpenAI
-- **`seo-frontend/`** — React + Vite UI (Adobe Spectrum)
+## API key and environment variables
 
-They are **one Git repo** (`seo-agent` on GitHub), not two separate repositories.
+**You must configure Azure OpenAI before the server can call the model.**
 
-## Required: Azure OpenAI API key
-
-The backend calls **Azure OpenAI**. Configure it before running the API.
-
-1. Copy the template:
+1. Copy the example file:
 
    ```bash
-   cp seo-backend/.env.example seo-backend/.env
+   cp .env.example .env
    ```
 
-2. Edit **`seo-backend/.env`** and set **`AZURE_OPENAI_API_KEY`**, **`AZURE_OPENAI_ENDPOINT`**, **`AZURE_OPENAI_DEPLOYMENT_NAME`**, and **`AZURE_OPENAI_API_VERSION`** (see Azure portal for your resource).
+2. Edit `.env` in the **project root** (same folder as `main.py`) and set:
 
-3. **Never commit** `.env` or real keys.
+   | Variable | Required | Description |
+   |----------|----------|-------------|
+   | `AZURE_OPENAI_API_KEY` | **Yes** | Your Azure OpenAI API key |
+   | `AZURE_OPENAI_ENDPOINT` | **Yes** | Resource URL, e.g. `https://YOUR_RESOURCE.openai.azure.com` |
+   | `AZURE_OPENAI_DEPLOYMENT_NAME` | Recommended | Deployment name in Azure |
+   | `AZURE_OPENAI_API_VERSION` | Recommended | API version (match Azure portal) |
 
-More detail:
+3. **Do not commit** `.env`. It is listed in `.gitignore`.
 
-- **[`seo-backend/README.md`](seo-backend/README.md)** — Python API
-- **[`seo-frontend/README.md`](seo-frontend/README.md)** — web UI
+## Prerequisites
 
-## Quick start (local)
+- Python 3.8+
+- pip
+- Virtual environment (recommended)
 
-**Backend**
+## Installation
+
+From the **project root** (clone folder — where `main.py` lives):
 
 ```bash
-cd seo-backend
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+```
+
+**Windows (PowerShell):** `.\venv\Scripts\Activate.ps1`  
+**Windows (CMD):** `venv\Scripts\activate.bat`  
+**macOS / Linux:** `source venv/bin/activate`
+
+```bash
 pip install -r requirements.txt
-# Ensure seo-backend/.env exists with your Azure variables
+```
+
+## Run the API
+
+```bash
 uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**Frontend** (another terminal)
+Or:
 
 ```bash
-cd seo-frontend
-npm install
-npm run dev
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-The UI defaults to **`http://127.0.0.1:8000`** for the API (see `seo-frontend/src/services/api.js`).
+### URLs
 
-## Layout
+- API root: http://127.0.0.1:8000  
+- Health: http://127.0.0.1:8000/health  
+- Swagger: http://127.0.0.1:8000/docs  
+- ReDoc: http://127.0.0.1:8000/redoc  
+
+## API endpoints (summary)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/` | API info |
+| GET | `/api/products` | Product list |
+| POST | `/api/competitors` | Competitors for a product |
+| POST | `/api/analyze` | Analyze URL for keywords |
+| POST | `/api/rewrite-content` | SEO content rewrite |
+
+## Project structure
 
 ```
 .
-├── README.md                 # This file
-├── seo-backend/              # FastAPI + agents
-│   ├── README.md
-│   └── ...
-└── seo-frontend/             # React app
-    ├── README.md
-    └── ...
+├── agents/                  # CrewAI agents
+├── backend/
+│   ├── config.py            # Settings (from environment)
+│   ├── llm_client.py        # Azure OpenAI client
+│   ├── scraper.py
+│   └── semrush.py
+├── main.py                  # FastAPI app
+├── crew.py                  # Agent orchestration
+├── requirements.txt
+├── .env.example             # Template — copy to .env
+└── README.md                # This file
 ```
+
+## Example: analyze URL
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/forms/example",
+    "product": "Forms",
+    "time_range": "month"
+  }'
+```
+
+## Troubleshooting
+
+- **401 / errors from OpenAI** — Check `AZURE_OPENAI_API_KEY`, endpoint, deployment name, and API version in `.env`.
+- **Port in use** — Change port: `uvicorn main:app --host 127.0.0.1 --port 8001 --reload`
+- **Import errors** — Activate the venv and run `pip install -r requirements.txt` again.
+
+## Security
+
+- Never commit `.env` or real keys.
+- Restrict CORS in production to known origins.
