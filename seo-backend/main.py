@@ -9,10 +9,13 @@ No fallbacks - raises exceptions on failure.
 
 import html
 import json
+from pathlib import Path
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+_backend_dir = Path(__file__).resolve().parent
+load_dotenv(_backend_dir / ".env")
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Request

@@ -1,13 +1,25 @@
+# Stray env / cache if created at repo root
 venv/
 .venv/
 __pycache__/
-*.py[cod]
-*$py.class
-.Python
-.env
-.env.*
-!.env.example
+
+# Python (backend)
+seo-backend/venv/
+seo-backend/.venv/
+seo-backend/**/__pycache__/
+seo-backend/**/*.py[cod]
+seo-backend/**/.Python
+seo-backend/.env
+seo-backend/.env.*
+!seo-backend/.env.example
 *.log
 .DS_Store
 .idea/
 .vscode/
+
+# Node (frontend)
+seo-frontend/node_modules/
+seo-frontend/dist/
+seo-frontend/.env
+seo-frontend/.env.local
+seo-frontend/.env.*.local

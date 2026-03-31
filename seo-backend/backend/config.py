@@ -7,7 +7,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load .env from project root (folder that contains `backend/` and `main.py`),
+# Load .env from the backend app folder (contains `main.py` and package `backend/`),
 # so Azure settings work even if uvicorn is started from another cwd.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(_REPO_ROOT / ".env")

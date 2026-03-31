@@ -1,0 +1,21 @@
+{
+  "name": "seo-frontend",
+  "version": "1.0.0",
+  "description": "SEO Agent Frontend with Adobe Spectrum UI",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@adobe/react-spectrum": "^3.39.1",
+    "@spectrum-icons/workflow": "^4.2.17",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^7.2.7"
+  }
+}
