@@ -15,6 +15,23 @@ You get **one public URL**. The Docker image builds the React app and serves it 
 
 When it’s green, open the URL Render shows (e.g. `https://seo-keyword-analyzer.onrender.com`). Share that link.
 
+### Render shows “No repositories found” (GitHub not connecting)
+
+`render.yaml` only loads **after** Render can read your GitHub repo. Fix the GitHub link first:
+
+1. On the Blueprint page, under **Git providers**, click **Configure account** next to **GitHub** (or open [dashboard.render.com → Account Settings → Git Providers](https://dashboard.render.com)).
+2. You should land on GitHub’s **Render** app install page. Choose **either**:
+   - **All repositories**, **or**
+   - **Only select repositories** → add **`Ruchitas123/seo-agent`**.
+3. **Save** / **Install** and return to Render. **Refresh** the Blueprint page — your repo list should appear.
+4. If you use **two GitHub accounts**, confirm Render is connected to the same account that **owns** [Ruchitas123/seo-agent](https://github.com/Ruchitas123/seo-agent).
+
+**Workaround (public repo only):** On the same screen, use **Public Git Repository** and paste:
+
+`https://github.com/Ruchitas123/seo-agent`
+
+Then continue. Auto-deploy from pushes may be limited compared to the full GitHub connection; fixing the GitHub app is still better long term.
+
 ### Free tier caveats
 
 - The service **spins down** after ~15 minutes idle. The **first visit after sleep** may take **30–60 seconds** while it wakes up.
