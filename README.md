@@ -28,6 +28,7 @@ Product context and architecture live in [PRD.md](./PRD.md).
 
 Optional tooling in the backend includes Streamlit (`dashboard.py`) and standalone report scripts; see the backend README for details.
 
-## Public URL (free, one link for UI + API)
+## Public URL
 
-Use [Render](https://render.com) + [`render.yaml`](./render.yaml): one Docker deploy, no split frontend/backend. Steps in [DEPLOY.md](./DEPLOY.md).
+- **One URL (UI + API):** [Render](https://render.com) + [`render.yaml`](./render.yaml) — [DEPLOY.md](./DEPLOY.md).
+- **Vercel (UI) + API elsewhere:** set **`VITE_API_BASE_URL`** on Vercel to your Flask base URL — [DEPLOY.md](./DEPLOY.md) (section *Vercel (frontend only)*).
